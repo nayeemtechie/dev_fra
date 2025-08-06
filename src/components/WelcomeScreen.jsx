@@ -36,6 +36,7 @@ export const WelcomeScreen = () => {
         
         <ol className="list-decimal space-y-2 pl-5">
           <li>Enter a Find Request API URL in the text box above</li>
+          <li>Use Edit Paramters button to edit request parameters</li>
           <li>Click "Analyze" to fetch and process the API response</li>
           <li>Browse the results, facets, and debug information</li>
           <li>Click the "Score" button on any product to see its detailed scoring breakdown</li>
