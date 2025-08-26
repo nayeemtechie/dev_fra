@@ -42,13 +42,126 @@ export const SearchDebugInfo = ({ debugData }) => {
 
   const parsedSearchRequest = formatSearchRequest(searchRequest);
 
-  // Analyze hybrid search flow
-  const hybridSearchFlow = hybridSearch.find(item => item.includes("Hybrid search is executed for"))?.split(" for ")[1] || "Unknown";
-  
-  // Extract important algorithm info
-  const vectorAlgorithm = hybridSearch.find(item => item.includes("Vector search based on the algo"))?.split("algo ")[1]?.split(" with")[0] || "Unknown";
-  const minReturnValue = hybridSearch.find(item => item.includes("minReturn as"))?.split("minReturn as ")[1]?.split(" for")[0] || "Unknown";
-  
+  // Enhanced hybrid search analysis to handle both old and new API formats
+  const analyzeHybridSearch = (hybridSearch) => {
+    const analysis = {
+      hybridSearchFlow: "Unknown",
+      vectorAlgorithm: "Unknown",
+      minReturnValue: "Unknown",
+      topResults: null,
+      similarityThreshold: null
+    };
+
+    if (!hybridSearch || hybridSearch.length === 0) {
+      return analysis;
+    }
+
+    // Extract hybrid search flow - works for both formats
+    const flowItem = hybridSearch.find(item => item.includes("Hybrid search is executed for"));
+    if (flowItem) {
+      const flowMatch = flowItem.split(" for ");
+      if (flowMatch.length > 1) {
+        analysis.hybridSearchFlow = flowMatch[1];
+      }
+    }
+
+    // Handle OLD format: "Vector search based on the algo RR_VECTOR_SIMILARITY with minReturn as 0.72 for Main flow"
+    const oldFormatItem = hybridSearch.find(item => 
+      item.includes("Vector search based on the algo") && item.includes("with minReturn as")
+    );
+    
+    if (oldFormatItem) {
+      // Extract algorithm from old format
+      const algoMatch = oldFormatItem.match(/algo\s+(\w+)/);
+      if (algoMatch && algoMatch[1]) {
+        analysis.vectorAlgorithm = algoMatch[1];
+      }
+      
+      // Extract minReturn from old format
+      const minReturnMatch = oldFormatItem.match(/minReturn as\s+([\d.]+)/);
+      if (minReturnMatch && minReturnMatch[1]) {
+        analysis.minReturnValue = minReturnMatch[1];
+      }
+    }
+
+    // Handle NEW format: "Top 500 results with similarity above 0.72 will be picked from RR_KNN_SIMILARITY Vector search based on the configuration for Main flow"
+    const newFormatItem = hybridSearch.find(item => 
+      item.includes("results with similarity above") && item.includes("will be picked from")
+    );
+    
+    if (newFormatItem) {
+      // Extract top results count from new format
+      const topResultsMatch = newFormatItem.match(/Top\s+(\d+)\s+results/);
+      if (topResultsMatch && topResultsMatch[1]) {
+        analysis.topResults = topResultsMatch[1];
+      }
+      
+      // Extract similarity threshold from new format
+      const similarityMatch = newFormatItem.match(/similarity above\s+([\d.]+)/);
+      if (similarityMatch && similarityMatch[1]) {
+        analysis.similarityThreshold = similarityMatch[1];
+        // Use similarity threshold as minReturn for backward compatibility
+        if (analysis.minReturnValue === "Unknown") {
+          analysis.minReturnValue = similarityMatch[1];
+        }
+      }
+      
+      // Extract algorithm from new format
+      const newAlgoMatch = newFormatItem.match(/from\s+(\w+)\s+Vector search/);
+      if (newAlgoMatch && newAlgoMatch[1]) {
+        analysis.vectorAlgorithm = newAlgoMatch[1];
+      }
+    }
+
+    // Fallback: try to extract algorithm from any item containing vector algorithm names
+    if (analysis.vectorAlgorithm === "Unknown") {
+      const algorithmPatterns = [
+        /RR_VECTOR_SIMILARITY/,
+        /RR_KNN_SIMILARITY/,
+        /VECTOR_SIMILARITY/,
+        /KNN_SIMILARITY/
+      ];
+      
+      for (const item of hybridSearch) {
+        for (const pattern of algorithmPatterns) {
+          if (pattern.test(item)) {
+            const match = item.match(pattern);
+            if (match) {
+              analysis.vectorAlgorithm = match[0];
+              break;
+            }
+          }
+        }
+        if (analysis.vectorAlgorithm !== "Unknown") break;
+      }
+    }
+
+    // Additional fallback for minReturn/threshold extraction from any item
+    if (analysis.minReturnValue === "Unknown") {
+      for (const item of hybridSearch) {
+        // Look for any decimal number that could be a threshold
+        const thresholdMatches = item.match(/([\d.]+)/g);
+        if (thresholdMatches) {
+          // Filter for reasonable threshold values (0.0 to 1.0)
+          const reasonableThresholds = thresholdMatches.filter(val => {
+            const num = parseFloat(val);
+            return num >= 0.0 && num <= 1.0 && val.includes('.');
+          });
+          
+          if (reasonableThresholds.length > 0) {
+            analysis.minReturnValue = reasonableThresholds[0];
+            break;
+          }
+        }
+      }
+    }
+
+    return analysis;
+  };
+
+  // Get the enhanced analysis
+  const hybridAnalysis = analyzeHybridSearch(hybridSearch);
+
   return (
     <div className="bg-white border rounded-lg shadow-sm mb-6 overflow-hidden">
       <div 
@@ -101,20 +214,41 @@ export const SearchDebugInfo = ({ debugData }) => {
               <div>
                 <div className="bg-indigo-50 p-3 rounded-md mb-4">
                   <h4 className="text-sm font-medium text-indigo-800 mb-2">Hybrid Search Analysis</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  
+                  {/* Enhanced grid to handle new format data */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="bg-white p-3 rounded border border-indigo-100">
                       <p className="text-xs text-gray-500">Search Flow</p>
-                      <p className="font-medium text-indigo-900">{hybridSearchFlow}</p>
+                      <p className="font-medium text-indigo-900">{hybridAnalysis.hybridSearchFlow}</p>
                     </div>
                     <div className="bg-white p-3 rounded border border-indigo-100">
                       <p className="text-xs text-gray-500">Vector Algorithm</p>
-                      <p className="font-medium text-indigo-900">{vectorAlgorithm}</p>
+                      <p className="font-medium text-indigo-900">{hybridAnalysis.vectorAlgorithm}</p>
                     </div>
                     <div className="bg-white p-3 rounded border border-indigo-100">
-                      <p className="text-xs text-gray-500">Min Return Threshold</p>
-                      <p className="font-medium text-indigo-900">{minReturnValue}</p>
+                      <p className="text-xs text-gray-500">Similarity Threshold</p>
+                      <p className="font-medium text-indigo-900">{hybridAnalysis.minReturnValue}</p>
                     </div>
+                    {/* New field for top results count when available */}
+                    {hybridAnalysis.topResults && (
+                      <div className="bg-white p-3 rounded border border-indigo-100">
+                        <p className="text-xs text-gray-500">Top Results</p>
+                        <p className="font-medium text-indigo-900">{hybridAnalysis.topResults}</p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Additional info section for new format details */}
+                  {(hybridAnalysis.topResults || hybridAnalysis.similarityThreshold) && (
+                    <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
+                      <p className="text-xs text-blue-700">
+                        <strong>Vector Search Configuration:</strong>
+                        {hybridAnalysis.topResults && ` Top ${hybridAnalysis.topResults} results`}
+                        {hybridAnalysis.similarityThreshold && ` with similarity above ${hybridAnalysis.similarityThreshold}`}
+                        {hybridAnalysis.vectorAlgorithm !== "Unknown" && ` using ${hybridAnalysis.vectorAlgorithm}`}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <h4 className="font-medium text-gray-700 mb-2 text-sm">Raw Debug Output:</h4>
@@ -126,6 +260,16 @@ export const SearchDebugInfo = ({ debugData }) => {
                     </li>
                   ))}
                 </ul>
+
+                {/* Debug information for developers */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-xs text-yellow-800 font-medium mb-2">Debug Info (Development Only):</p>
+                    <pre className="text-xs text-yellow-700 overflow-auto">
+{JSON.stringify(hybridAnalysis, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
 
