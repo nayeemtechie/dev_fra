@@ -11,6 +11,7 @@ const analyzeScoring = (scoreData) => {
       firstPassScore: 0,
       secondPassScore: 0,
       thresholdScore: 0,
+      vectorScore: 0, // Add vectorScore to track "within top 500"
       fieldWeights: [],
       brandBoosts: [],
       lexicalScores: [],
@@ -66,6 +67,15 @@ const analyzeScoring = (scoreData) => {
           const scoreValue = nvPairs[i - 1];
           if (typeof scoreValue === 'number') {
             result.thresholdScore = formatScore(scoreValue);
+          }
+        }
+        
+        // NEW: Look for "within top 500" and set as Vector Score
+        if (key === 'description' && value === 'within top 500') {
+          const scoreValue = nvPairs[i - 1];
+          if (typeof scoreValue === 'number') {
+            result.vectorScore = formatScore(scoreValue);
+            console.log('Found "within top 500" vector score:', scoreValue);
           }
         }
         
@@ -439,6 +449,7 @@ const analyzeScoring = (scoreData) => {
       functionQueries: result.functionQueries.length,
       rangeQueries: result.rangeQueries.length,
       lexicalGroups: result.maxPlusOthersGroups.length,
+      vectorScore: result.vectorScore, // Log the new vector score
       debugInfo: result.debugInfo
     });
     
@@ -551,9 +562,9 @@ export const ProductScoreDetail = ({
                       </div>
                       <div className="text-center p-3 bg-orange-50 rounded-lg">
                         <div className="text-2xl font-bold text-orange-600">
-                          {analysis.thresholdScore.toFixed(2)}
+                          {analysis.vectorScore > 0 ? analysis.vectorScore.toFixed(2) : analysis.thresholdScore.toFixed(2)}
                         </div>
-                        <div className="text-sm text-gray-600">Threshold</div>
+                        <div className="text-sm text-gray-600">Vector Score</div>
                       </div>
                     </div>
                   </div>
