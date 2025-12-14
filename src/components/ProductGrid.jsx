@@ -30,7 +30,7 @@ const ProductCard = ({ product, loading, onScoreClick, debug, productIndex }) =>
     console.log('Debug data available:', !!debug);
     console.log('Solr debug available:', !!(debug && debug.solrDebug));
     console.log('Explain data available:', !!(debug && debug.solrDebug && debug.solrDebug.explain));
-    
+
     if (onScoreClick) {
       onScoreClick(product, productIndex);
     } else {
@@ -66,7 +66,7 @@ const ProductCard = ({ product, loading, onScoreClick, debug, productIndex }) =>
           <img
             src={product.imageId}
             alt={product.name}
-            className={`w-full h-48 object-cover rounded ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+            className={`w-full h-48 object-contain rounded bg-gray-50 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
             onError={handleImageError}
             onLoad={handleImageLoad}
           />
@@ -78,7 +78,7 @@ const ProductCard = ({ product, loading, onScoreClick, debug, productIndex }) =>
         <h3 className="font-medium text-gray-900 line-clamp-2 text-sm">
           {product.name}
         </h3>
-        
+
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-500">
             ID: {product.id}
@@ -117,7 +117,7 @@ export const ProductGrid = ({ products, loading, total, query, debug }) => {
     console.log('=== Score Analysis Debug ===');
     console.log('Product:', product.name, 'Index:', productIndex);
     console.log('Debug object:', debug);
-    
+
     if (!debug) {
       console.error('No debug data available');
       alert('No debug data available. Make sure debug=true is included in your search URL.');
@@ -141,7 +141,7 @@ export const ProductGrid = ({ products, loading, total, query, debug }) => {
     // Extract scoring info for this specific product by its index
     const scoreData = extractScoringInfoByIndex(products, debug.solrDebug, productIndex);
     console.log('Extracted score data:', scoreData);
-    
+
     if (!scoreData) {
       console.warn(`No scoring data found for product at index ${productIndex}`);
       // Let's try to get the raw data anyway for debugging
@@ -153,7 +153,7 @@ export const ProductGrid = ({ products, loading, total, query, debug }) => {
         setSelectedProductIndex(productIndex);
         return;
       }
-      
+
       alert(`No scoring data found for this product. Check the console for more details.`);
       return;
     }
@@ -174,7 +174,7 @@ export const ProductGrid = ({ products, loading, total, query, debug }) => {
   // Add debug logging for the overall state
   console.log('ProductGrid render - Debug data available:', !!debug);
   console.log('ProductGrid render - Products count:', products?.length || 0);
-  
+
   if (loading) {
     return (
       <div className="lg:col-span-3">

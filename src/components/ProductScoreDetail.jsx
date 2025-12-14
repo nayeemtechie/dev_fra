@@ -32,20 +32,20 @@ const analyzeScoring = (scoreData) => {
     const extractScores = (nvPairs, depth = 0, parentContext = '') => {
       for (let i = 0; i < nvPairs.length; i += 2) {
         if (i + 1 >= nvPairs.length) continue;
-        
+
         const key = nvPairs[i];
         const value = nvPairs[i + 1];
-        
+
         // Debug logging
         if (key === 'description' && typeof value === 'string') {
           result.debugInfo.push({ depth, description: value, hasDetails: false });
         }
-        
+
         // Capture the top-level value as the total score
         if (depth === 0 && key === 'value' && typeof value === 'number') {
           result.totalScore = formatScore(value);
         }
-        
+
         // Look for first pass score
         if (key === 'description' && value === 'first pass score') {
           const scoreValue = nvPairs[i - 1];
@@ -53,7 +53,7 @@ const analyzeScoring = (scoreData) => {
             result.firstPassScore = formatScore(scoreValue);
           }
         }
-        
+
         // Look for second pass score
         if (key === 'description' && value === 'second pass score') {
           const scoreValue = nvPairs[i - 1];
@@ -61,7 +61,7 @@ const analyzeScoring = (scoreData) => {
             result.secondPassScore = formatScore(scoreValue);
           }
         }
-        
+
         // Look for threshold score
         if (key === 'description' && value === 'Score above threshold') {
           const scoreValue = nvPairs[i - 1];
@@ -69,19 +69,19 @@ const analyzeScoring = (scoreData) => {
             result.thresholdScore = formatScore(scoreValue);
           }
         }
-        
-        // NEW: Look for "within top 500" and set as Vector Score
-        if (key === 'description' && value === 'within top 500') {
+
+        // Look for "within top N" (e.g., "within top 50", "within top 500") and set as Vector Score
+        if (key === 'description' && typeof value === 'string' && value.match(/^within top \d+$/)) {
           const scoreValue = nvPairs[i - 1];
           if (typeof scoreValue === 'number') {
             result.vectorScore = formatScore(scoreValue);
-            console.log('Found "within top 500" vector score:', scoreValue);
+            console.log('Found vector score from "' + value + '":', scoreValue);
           }
         }
-        
+
         // Extract ALL scoring components from descriptions
         if (key === 'description' && typeof value === 'string') {
-          
+
           // Extract range queries (discount amount, cut size, etc.)
           const rangeQueryMatch = value.match(/(ff_\w+|fl_\w+):\[([^\]]+)\](?:\^([\d.]+))?/);
           if (rangeQueryMatch) {
@@ -97,7 +97,7 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Extract function queries (global rank, product functions)
           const functionQueryMatch = value.match(/FunctionQuery\(([^)]+)\)/);
           if (functionQueryMatch && !value.includes('if(query')) { // Exclude category boosts
@@ -111,7 +111,7 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Extract exact match product attributes (search_exact_*)
           const exactMatchPattern = value.match(/search_exact_(\w+):([^)^]+)(?:\^([\d.]+))?/);
           if (exactMatchPattern) {
@@ -127,7 +127,7 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Extract standard field matches (fs_*, without search_syns_ prefix)
           const standardFieldMatch = value.match(/weight\((fs_\w+):([^)]+)\s+in\s+\d+\)/);
           if (standardFieldMatch) {
@@ -143,15 +143,15 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Check for "max plus X times others of:" pattern
           const maxPlusOthersMatch = value.match(/max plus ([\d.]+) times others of:/);
           if (maxPlusOthersMatch) {
             const scoreValue = nvPairs[i - 1];
             const multiplier = parseFloat(maxPlusOthersMatch[1]);
-            
+
             console.log('Found max plus others pattern:', value, 'Score:', scoreValue);
-            
+
             if (typeof scoreValue === 'number') {
               // This indicates a lexical scoring group
               const lexicalGroup = {
@@ -160,22 +160,22 @@ const analyzeScoring = (scoreData) => {
                 fields: [],
                 description: value
               };
-              
+
               // Look for details to extract individual field scores
               const detailsIndex = i + 1;
-              if (detailsIndex < nvPairs.length && nvPairs[detailsIndex + 1] && 
-                  Array.isArray(nvPairs[detailsIndex + 1]) && nvPairs[detailsIndex] === 'details') {
-                
+              if (detailsIndex < nvPairs.length && nvPairs[detailsIndex + 1] &&
+                Array.isArray(nvPairs[detailsIndex + 1]) && nvPairs[detailsIndex] === 'details') {
+
                 console.log('Found details array with', nvPairs[detailsIndex + 1].length, 'items');
                 result.debugInfo[result.debugInfo.length - 1].hasDetails = true;
-                
+
                 // Extract field details from the details array
                 nvPairs[detailsIndex + 1].forEach(detail => {
                   if (detail && detail.nvPairs) {
                     extractFieldsFromDetails(detail.nvPairs, lexicalGroup);
                   }
                 });
-                
+
                 // If details array was empty, search in the broader context
                 if (lexicalGroup.fields.length === 0) {
                   console.log('Details array was empty, searching in broader context');
@@ -187,12 +187,12 @@ const analyzeScoring = (scoreData) => {
                 console.log('No details array found, searching in current context');
                 findFieldsInSiblingNodes(nvPairs, lexicalGroup, i);
               }
-              
+
               console.log('Lexical group has', lexicalGroup.fields.length, 'fields');
               result.maxPlusOthersGroups.push(lexicalGroup);
             }
           }
-          
+
           // Extract ALL field weights (both in and out of lexical groups)
           const fieldMatch = value.match(/weight\(([^:]+):([^)]+)\s+in\s+\d+\)/);
           if (fieldMatch) {
@@ -207,7 +207,7 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Check for brand boosts - Only look for applied ones in explain
           const brandMatch = value.match(/weight\(fs_product_brand:([^)]+)\s+in\s+\d+\)/);
           if (brandMatch) {
@@ -221,14 +221,14 @@ const analyzeScoring = (scoreData) => {
               });
             }
           }
-          
+
           // Check for category boosts - FunctionQuery patterns
           const categoryBoostMatch = value.match(/FunctionQuery\(if\(query\(\+\(\+fms_product_category_external_id:(\d+)\),def=0\.0\),const\(0\),const\((\d+)\)\)\), product of:/);
           if (categoryBoostMatch) {
             const scoreValue = nvPairs[i - 1];
             const categoryId = categoryBoostMatch[1];
             const boostValue = parseInt(categoryBoostMatch[2]);
-            
+
             if (typeof scoreValue === 'number') {
               result.categoryBoosts.push({
                 categoryId: categoryId,
@@ -241,7 +241,7 @@ const analyzeScoring = (scoreData) => {
             }
           }
         }
-        
+
         // Recursively process nested details
         if (key === 'details' && Array.isArray(value)) {
           value.forEach(detail => {
@@ -257,10 +257,10 @@ const analyzeScoring = (scoreData) => {
     const extractFieldsFromDetails = (nvPairs, lexicalGroup) => {
       for (let i = 0; i < nvPairs.length; i += 2) {
         if (i + 1 >= nvPairs.length) continue;
-        
+
         const key = nvPairs[i];
         const value = nvPairs[i + 1];
-        
+
         if (key === 'description' && typeof value === 'string') {
           const fieldMatch = value.match(/weight\(([^:]+):([^)]+)\s+in\s+\d+\)/);
           if (fieldMatch) {
@@ -276,7 +276,7 @@ const analyzeScoring = (scoreData) => {
             }
           }
         }
-        
+
         // Recursively process nested details
         if (key === 'details' && Array.isArray(value)) {
           value.forEach(detail => {
@@ -292,16 +292,16 @@ const analyzeScoring = (scoreData) => {
     const findFieldsInSiblingNodes = (nvPairs, lexicalGroup, startIndex) => {
       // Look backwards and forwards from the "max plus others" node to find field weights
       // This handles cases where the field details are not nested under the "max plus others" node
-      
+
       console.log('Searching for fields in sibling nodes around index', startIndex);
-      
+
       // Search in the broader context (parent level)
       for (let i = 0; i < nvPairs.length; i += 2) {
         if (i + 1 >= nvPairs.length) continue;
-        
+
         const key = nvPairs[i];
         const value = nvPairs[i + 1];
-        
+
         if (key === 'description' && typeof value === 'string') {
           const fieldMatch = value.match(/weight\(([^:]+):([^)]+)\s+in\s+\d+\)/);
           if (fieldMatch) {
@@ -317,7 +317,7 @@ const analyzeScoring = (scoreData) => {
             }
           }
         }
-        
+
         // Also check nested details at this level
         if (key === 'details' && Array.isArray(value)) {
           value.forEach(detail => {
@@ -333,20 +333,20 @@ const analyzeScoring = (scoreData) => {
     const searchForFieldsRecursively = (nvPairs, lexicalGroup) => {
       for (let i = 0; i < nvPairs.length; i += 2) {
         if (i + 1 >= nvPairs.length) continue;
-        
+
         const key = nvPairs[i];
         const value = nvPairs[i + 1];
-        
+
         if (key === 'description' && typeof value === 'string') {
           const fieldMatch = value.match(/weight\(([^:]+):([^)]+)\s+in\s+\d+\)/);
           if (fieldMatch) {
             const scoreValue = nvPairs[i - 1];
             if (typeof scoreValue === 'number') {
               // Avoid duplicate entries
-              const exists = lexicalGroup.fields.some(f => 
+              const exists = lexicalGroup.fields.some(f =>
                 f.field === fieldMatch[1] && f.term === fieldMatch[2].trim()
               );
-              
+
               if (!exists) {
                 lexicalGroup.fields.push({
                   field: fieldMatch[1],
@@ -359,7 +359,7 @@ const analyzeScoring = (scoreData) => {
             }
           }
         }
-        
+
         // Continue recursive search
         if (key === 'details' && Array.isArray(value)) {
           value.forEach(detail => {
@@ -375,7 +375,7 @@ const analyzeScoring = (scoreData) => {
     const createLexicalGroupsFromFields = () => {
       if (result.maxPlusOthersGroups.length === 0 && result.fieldWeights.length > 0) {
         console.log('No lexical groups found, creating from', result.fieldWeights.length, 'field weights');
-        
+
         // Group all field weights into a single lexical group with 0.5 multiplier (common default)
         const lexicalGroup = {
           totalScore: result.fieldWeights.reduce((sum, field) => sum + field.score, 0),
@@ -388,7 +388,7 @@ const analyzeScoring = (scoreData) => {
           })),
           description: 'Inferred lexical group from field weights'
         };
-        
+
         result.maxPlusOthersGroups.push(lexicalGroup);
       } else if (result.maxPlusOthersGroups.length > 0) {
         // Check if any lexical groups have no fields and populate them from fieldWeights
@@ -418,19 +418,19 @@ const analyzeScoring = (scoreData) => {
           const sortedFields = group.fields.sort((a, b) => b.rawScore - a.rawScore);
           const maxField = sortedFields[0];
           const otherFields = sortedFields.slice(1);
-          
+
           // Calculate: max + multiplier × sum(others)
           const maxScore = maxField.rawScore;
           const othersSum = otherFields.reduce((sum, field) => sum + field.rawScore, 0);
           const calculatedTotal = maxScore + (group.multiplier * othersSum);
-          
+
           // Mark the max field and calculate weighted scores
           group.fields.forEach(field => {
             field.isMax = field === maxField;
             field.weightedScore = field.isMax ? field.rawScore : formatScore(field.rawScore * group.multiplier);
             field.contribution = formatScore((field.weightedScore / calculatedTotal) * 100);
           });
-          
+
           group.calculatedTotal = formatScore(calculatedTotal);
           group.maxScore = maxScore;
           group.othersSum = formatScore(othersSum);
@@ -442,7 +442,7 @@ const analyzeScoring = (scoreData) => {
     extractScores(scoreData.nvPairs);
     createLexicalGroupsFromFields(); // Create groups if none found
     calculateLexicalWeights();
-    
+
     console.log('Analysis result:', {
       totalFields: result.fieldWeights.length,
       productAttributes: result.productAttributes.length,
@@ -452,7 +452,7 @@ const analyzeScoring = (scoreData) => {
       vectorScore: result.vectorScore, // Log the new vector score
       debugInfo: result.debugInfo
     });
-    
+
     return result;
   } catch (error) {
     console.error('Error analyzing scoring:', error);
@@ -460,11 +460,11 @@ const analyzeScoring = (scoreData) => {
   }
 };
 
-export const ProductScoreDetail = ({ 
-  product, 
-  scoreData, 
+export const ProductScoreDetail = ({
+  product,
+  scoreData,
   onClose,
-  productIndex 
+  productIndex
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
@@ -574,8 +574,8 @@ export const ProductScoreDetail = ({
               {/* Field Match Scores - Table Format */}
               {analysis.maxPlusOthersGroups.length > 0 ? (
                 <div>
-                  <SectionHeader 
-                    title="Field Match Scores" 
+                  <SectionHeader
+                    title="Field Match Scores"
                     sectionKey="lexicalScores"
                     count={analysis.maxPlusOthersGroups.reduce((total, group) => total + group.fields.length, 0)}
                   />
@@ -591,7 +591,7 @@ export const ProductScoreDetail = ({
                               <strong>Formula:</strong> Max field score + {group.multiplier} × sum of other field scores = {group.calculatedTotal?.toFixed(2)}
                             </div>
                           </div>
-                          
+
                           <div className="overflow-x-auto">
                             <table className="w-full">
                               <thead className="bg-gray-50">
@@ -700,8 +700,8 @@ export const ProductScoreDetail = ({
               {/* Product Attributes Contributing to Score */}
               {analysis.productAttributes.length > 0 && (
                 <div>
-                  <SectionHeader 
-                    title="Product Attributes" 
+                  <SectionHeader
+                    title="Product Attributes"
                     sectionKey="productAttributes"
                     count={analysis.productAttributes.length}
                   />
@@ -738,11 +738,10 @@ export const ProductScoreDetail = ({
                                   {attr.value}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                    attr.type === 'exact_match' 
-                                      ? 'bg-green-100 text-green-800' 
+                                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${attr.type === 'exact_match'
+                                      ? 'bg-green-100 text-green-800'
                                       : 'bg-blue-100 text-blue-800'
-                                  }`}>
+                                    }`}>
                                     {attr.type === 'exact_match' ? 'EXACT' : 'FIELD'}
                                   </span>
                                 </td>
@@ -765,8 +764,8 @@ export const ProductScoreDetail = ({
               {/* Function Queries & Range Queries */}
               {(analysis.functionQueries.length > 0 || analysis.rangeQueries.length > 0) && (
                 <div>
-                  <SectionHeader 
-                    title="Function & Range Queries" 
+                  <SectionHeader
+                    title="Function & Range Queries"
                     sectionKey="functionQueries"
                     count={analysis.functionQueries.length + analysis.rangeQueries.length}
                   />
@@ -784,7 +783,7 @@ export const ProductScoreDetail = ({
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex-1">
                                     <div className="font-medium text-gray-900 text-sm">
-                                      {func.function.length > 60 
+                                      {func.function.length > 60
                                         ? func.function.substring(0, 60) + '...'
                                         : func.function
                                       }
@@ -847,8 +846,8 @@ export const ProductScoreDetail = ({
               {/* Applied Category Boosts */}
               {analysis.categoryBoosts.length > 0 && (
                 <div>
-                  <SectionHeader 
-                    title="Applied Category Boosts" 
+                  <SectionHeader
+                    title="Applied Category Boosts"
                     sectionKey="categoryBoosts"
                     count={analysis.categoryBoosts.length}
                   />
@@ -878,13 +877,12 @@ export const ProductScoreDetail = ({
                                 </div>
                               </div>
                             </div>
-                            <div className={`text-sm p-2 rounded ${
-                              boost.applied 
-                                ? 'text-green-600 bg-green-50' 
+                            <div className={`text-sm p-2 rounded ${boost.applied
+                                ? 'text-green-600 bg-green-50'
                                 : 'text-gray-600 bg-gray-50'
-                            }`}>
-                              {boost.applied 
-                                ? `✓ This product belongs to category ${boost.categoryId}` 
+                              }`}>
+                              {boost.applied
+                                ? `✓ This product belongs to category ${boost.categoryId}`
                                 : `○ This product does not belong to category ${boost.categoryId}`
                               }
                             </div>
@@ -899,8 +897,8 @@ export const ProductScoreDetail = ({
               {/* Applied Brand Boosts */}
               {analysis.brandBoosts.length > 0 && (
                 <div>
-                  <SectionHeader 
-                    title="Applied Brand Boosts" 
+                  <SectionHeader
+                    title="Applied Brand Boosts"
                     sectionKey="brandBoosts"
                     count={analysis.brandBoosts.length}
                   />
