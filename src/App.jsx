@@ -80,6 +80,18 @@ function App() {
           </>
         )}
       </div>
+
+      {/* Footer */}
+      <footer style={{
+        textAlign: 'center',
+        padding: '1.5rem 1rem',
+        marginTop: '2rem',
+        borderTop: '1px solid #e5e7eb',
+        color: '#6b7280',
+        fontSize: '0.875rem'
+      }}>
+        Developed by <strong style={{ color: '#374151' }}>Nayeemuddin Mohammed</strong>
+      </footer>
     </div>
   );
 }
