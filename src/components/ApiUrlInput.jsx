@@ -82,50 +82,56 @@ export const ApiUrlInput = ({ onSearch }) => {
   return (
     <>
       <style>{spinKeyframes}</style>
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">API URL</h2>
-        <p className="text-sm text-gray-500 mb-3">
-          Enter the Find Request API URL to analyze its response:
-        </p>
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-grow">
-              <textarea
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm h-24"
-                placeholder="https://recs.richrelevance.com/rrserver/api/find/v1/5db612dbf0548888?query=sheba&rows=30"
-              />
-            </div>
-            <div className="flex sm:flex-col gap-2 justify-end sm:justify-center">
-              <button
-                type="button"
-                onClick={openParameterEditor}
-                className="group inline-flex items-center gap-1.5 px-3 py-2 border border-indigo-200 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                title="Edit Request Parameters"
-              >
-                <SlidersHorizontal
-                  className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12"
+      <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Title bar */}
+        <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">API URL</h2>
+        </div>
+
+        <div className="p-5">
+          <p className="text-sm text-gray-500 mb-3">
+            Enter the Find Request API URL to analyze its response:
+          </p>
+          <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-grow">
+                <textarea
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  className="block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm h-24 bg-gray-50 focus:bg-white transition-colors duration-200 resize-none"
+                  placeholder="https://recs.richrelevance.com/rrserver/api/find/v1/5db612dbf0548888?query=sheba&rows=30"
                 />
-                <span className="whitespace-nowrap text-xs">Edit Params</span>
-              </button>
-              <button
-                type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Analyze
-              </button>
+              </div>
+              <div className="flex sm:flex-col gap-2 justify-end sm:justify-center">
+                <button
+                  type="button"
+                  onClick={openParameterEditor}
+                  className="group inline-flex items-center gap-1.5 px-3 py-2.5 border border-indigo-200 rounded-xl shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                  title="Edit Request Parameters"
+                >
+                  <SlidersHorizontal
+                    className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12"
+                  />
+                  <span className="whitespace-nowrap text-xs">Edit Params</span>
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center px-5 py-2.5 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Analyze
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="text-xs text-gray-500">
-            <p>The following parameters will be automatically processed:</p>
-            <ul className="list-disc pl-4 mt-1">
-              <li><code>findDebug=searchServiceDebug,solrDebugAll</code> - For detailed scoring information (will override existing findDebug)</li>
-              <li><code>fl=name,imageId</code> - Required fields for display (will be appended to existing fl)</li>
-            </ul>
-          </div>
-        </form>
+            <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+              <p className="font-medium text-gray-500 mb-1">Auto-processed parameters:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li><code className="text-indigo-500 bg-indigo-50 px-1 rounded">findDebug=searchServiceDebug,solrDebugAll</code> — scoring info (overrides existing)</li>
+                <li><code className="text-indigo-500 bg-indigo-50 px-1 rounded">fl=name,imageId</code> — required display fields (appended)</li>
+              </ul>
+            </div>
+          </form>
+        </div>
       </div>
 
       {showParameterEditor && (

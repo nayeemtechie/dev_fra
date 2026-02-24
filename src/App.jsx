@@ -41,14 +41,14 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <SearchHeader />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ApiUrlInput onSearch={handleApiUrlSearch} />
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl relative mb-6" role="alert">
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
@@ -82,15 +82,17 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '1.5rem 1rem',
-        marginTop: '2rem',
-        borderTop: '1px solid #e5e7eb',
-        color: '#6b7280',
-        fontSize: '0.875rem'
-      }}>
-        Developed by <strong style={{ color: '#374151' }}>Nayeemuddin Mohammed</strong>
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-sm text-gray-500">
+              © {new Date().getFullYear()} Find Response Analyzer
+            </p>
+            <p className="text-xs text-gray-400">
+              Developed by <span className="font-medium text-gray-500">Nayeemuddin Mohammed</span>
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   );

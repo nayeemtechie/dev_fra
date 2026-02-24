@@ -599,6 +599,9 @@ export const ProductScoreDetail = ({
                                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Field Name
                                   </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Matched Word
+                                  </th>
                                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Actual Weight
                                   </th>
@@ -615,6 +618,9 @@ export const ProductScoreDetail = ({
                                   <tr key={fieldIndex} className={field.isMax ? 'bg-green-50' : ''}>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                                       {cleanFieldName(field.field)}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 italic">
+                                      {field.term || '—'}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-right font-semibold">
                                       {field.rawScore.toFixed(2)}
@@ -638,7 +644,7 @@ export const ProductScoreDetail = ({
                               </tbody>
                               <tfoot className="bg-gray-50">
                                 <tr>
-                                  <td colSpan="2" className="px-4 py-3 text-sm font-medium text-gray-900">
+                                  <td colSpan="3" className="px-4 py-3 text-sm font-medium text-gray-900">
                                     Total Contribution:
                                   </td>
                                   <td className="px-4 py-3 text-sm text-right font-bold text-blue-600">
@@ -739,8 +745,8 @@ export const ProductScoreDetail = ({
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <span className={`px-2 py-1 text-xs rounded-full font-medium ${attr.type === 'exact_match'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-blue-100 text-blue-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-blue-100 text-blue-800'
                                     }`}>
                                     {attr.type === 'exact_match' ? 'EXACT' : 'FIELD'}
                                   </span>
@@ -878,8 +884,8 @@ export const ProductScoreDetail = ({
                               </div>
                             </div>
                             <div className={`text-sm p-2 rounded ${boost.applied
-                                ? 'text-green-600 bg-green-50'
-                                : 'text-gray-600 bg-gray-50'
+                              ? 'text-green-600 bg-green-50'
+                              : 'text-gray-600 bg-gray-50'
                               }`}>
                               {boost.applied
                                 ? `✓ This product belongs to category ${boost.categoryId}`
